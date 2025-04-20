@@ -3,7 +3,7 @@
  */
 
 // Global DEBUG flag - set to true for debugging help
-const DEBUG_MODE = true; // Changed to true for troubleshooting
+const DEBUG_MODE = false; // Changed to false to disable debug logging
 
 // Game states
 const GameState = {
@@ -18,18 +18,14 @@ const GameState = {
 
 class Game {
     constructor() {
-        console.log('Game constructor starting...');
         // Initialize canvas and context
         this.canvas = document.getElementById('gameCanvas');
-        console.log('Canvas element:', this.canvas);
         this.ctx = this.canvas.getContext('2d');
-        console.log('Canvas context:', this.ctx);
         this.width = this.canvas.width;
         this.height = this.canvas.height;
         
         // Game state variables
         this.state = GameState.MENU;
-        console.log('Initial game state:', this.state);
         this.paused = false;
         this.score = 0;
         this.highScore = localStorage.getItem('powerShooterHighScore') || 0;
@@ -54,18 +50,15 @@ class Game {
         this.init();
         
         // Start the game loop
-        console.log('Starting game loop...');
         requestAnimationFrame(this.gameLoopBound);
     }
     
     init() {
-        console.log('Initializing game...');
         // Create player
         this.player = new Player({
             x: 50, 
             y: this.height / 2 - 20
         });
-        console.log('Player created:', this.player);
         this.player.init(this.ctx);
         
         // Initialize shop system
@@ -74,12 +67,10 @@ class Game {
         this.shop.showMessage = (message, duration) => {
             showMessage(this.ctx, message, duration);
         };
-        console.log('Shop system initialized:', this.shop);
         
         // Create all levels
         for (let i = 1; i <= 11; i++) {
             this.levels[i] = LevelFactory["createLevel" + i](this.width, this.height);
-            console.log(`Level ${i} created:`, this.levels[i]);
         }
         
         // Initialize first level
@@ -106,11 +97,9 @@ class Game {
     }
     
     loadLevel(levelId) {
-        console.log(`Loading level ${levelId}...`);
         // Stop current level
         if (this.currentLevel) {
             this.currentLevel.endLevel();
-            console.log('Current level ended:', this.currentLevel);
         }
         
         // Load new level
@@ -121,16 +110,13 @@ class Game {
                 console.error(`Level ${levelId} does not exist in this.levels!`);
                 // Fallback to level 1 if the requested level doesn't exist
                 this.currentLevel = LevelFactory["createLevel1"](this.width, this.height);
-                console.log(`Created fallback Level 1:`, this.currentLevel);
             } else {
                 this.currentLevel = this.levels[levelId];
-                console.log('New level loaded from cache:', this.currentLevel);
             }
             
             // Initialize level context
             if (this.ctx) {
                 this.currentLevel.init(this.ctx);
-                console.log('Level initialized with context');
             } else {
                 console.error('Cannot initialize level: ctx is null');
             }
@@ -139,7 +125,6 @@ class Game {
             if (this.player && this.currentLevel.playerStartPosition) {
                 this.player.x = this.currentLevel.playerStartPosition.x;
                 this.player.y = this.currentLevel.playerStartPosition.y;
-                console.log('Player position reset:', this.player.x, this.player.y);
             } else {
                 console.error('Cannot reset player position:', 
                              this.player ? 'Missing playerStartPosition' : 'Player is null');
@@ -154,7 +139,6 @@ class Game {
             setTimeout(() => {
                 try {
                     this.currentLevel.startLevel();
-                    console.log('Level started:', this.currentLevel);
                 } catch (error) {
                     console.error('Error starting level:', error);
                 }
@@ -180,7 +164,6 @@ class Game {
                 break;
                 
             case GameState.PLAYING:
-                console.log('In PLAYING state, paused:', this.paused);
                 if (!this.paused) {
                     try {
                         this.update(deltaTime);
@@ -227,7 +210,6 @@ class Game {
     }
     
     update(deltaTime) {
-        console.log('Updating game state...');
         // Check if player is initialized
         if (!this.player) {
             console.error('Player is null in update!');
@@ -242,7 +224,6 @@ class Game {
                 right: this.width,
                 bottom: this.height
             });
-            console.log('Player updated:', this.player.x, this.player.y);
         } catch (error) {
             console.error('Error updating player:', error);
         }
@@ -251,11 +232,9 @@ class Game {
         if (this.currentLevel) {
             try {
                 const nextLevelId = this.currentLevel.update(deltaTime, this.player, this.input);
-                console.log('Level updated, next level ID:', nextLevelId);
                 
                 // Handle level transition if a next level ID is returned
                 if (nextLevelId !== null) {
-                    console.log(`Level transition triggered! Moving from level ${this.currentLevelId} to ${nextLevelId}`);
                     if (nextLevelId === null || nextLevelId === undefined) {
                         // This is the final level completed
                         this.completeGame();
@@ -284,7 +263,6 @@ class Game {
     }
     
     draw() {
-        console.log('Drawing game state...');
         // Check if context still exists
         if (!this.ctx) {
             console.error('Canvas context lost!');
@@ -295,7 +273,6 @@ class Game {
         if (this.currentLevel) {
             try {
                 this.currentLevel.draw(this.ctx);
-                console.log('Level drawn');
             } catch (error) {
                 console.error('Error drawing level:', error);
             }
@@ -307,7 +284,6 @@ class Game {
         if (this.player) {
             try {
                 this.player.draw(this.ctx);
-                console.log('Player drawn at:', this.player.x, this.player.y);
             } catch (error) {
                 console.error('Error drawing player:', error);
             }
@@ -324,7 +300,6 @@ class Game {
     }
     
     drawUI() {
-        console.log('Drawing UI...');
         // Draw score
         this.ctx.fillStyle = 'white';
         this.ctx.font = '20px Arial';
@@ -375,10 +350,14 @@ class Game {
         this.ctx.fillStyle = '#FFD700'; // Gold
         this.ctx.font = '14px Arial';
         this.ctx.fillText('Press B to open shop', this.width - 110, 120);
+        
+        // Draw virtual controls for mobile devices
+        if (this.input && typeof this.input.drawVirtualControls === 'function') {
+            this.input.drawVirtualControls(this.ctx);
+        }
     }
     
     drawMenu() {
-        console.log('Drawing menu...');
         // Draw game title
         this.ctx.fillStyle = '#111';
         this.ctx.fillRect(0, 0, this.width, this.height);
@@ -401,32 +380,31 @@ class Game {
         this.ctx.fillText('B to open shop', this.width / 2, 380);
         this.ctx.fillText('ESC to pause game', this.width / 2, 410);
         
-        // Draw start prompt
-        this.ctx.fillStyle = '#2ecc71';
-        this.ctx.font = '28px Arial';
-        this.ctx.fillText('Click anywhere to start', this.width / 2, 470);
+        // Draw mobile instructions if on mobile
+        if (this.input.isMobile) {
+            this.ctx.fillStyle = '#e67e22';
+            this.ctx.fillText('Touch directional buttons to move', this.width / 2, 440);
+            this.ctx.fillText('Touch shoot button to fire', this.width / 2, 470);
+        } else {
+            // Draw start prompt for non-mobile
+            this.ctx.fillStyle = '#2ecc71';
+            this.ctx.font = '28px Arial';
+            this.ctx.fillText('Click anywhere to start', this.width / 2, 470);
+        }
+        
+        // Draw virtual controls for mobile devices
+        if (this.input && typeof this.input.drawVirtualControls === 'function') {
+            this.input.drawVirtualControls(this.ctx);
+        }
         
         // Check for click to start game
         if (this.input.isMouseDown()) {
-            console.log('Mouse click detected in menu. Mouse state:', this.input.mouseDown);
-            console.log('Changing state from MENU to PLAYING');
             this.state = GameState.PLAYING;
-            console.log('New game state:', this.state);
             this.input.reset();
-            console.log('Input reset, mouse state after reset:', this.input.mouseDown);
-            
-            // Check if level is properly initialized
-            console.log('Current level:', this.currentLevel);
-            if (this.currentLevel) {
-                console.log('Level blocks:', this.currentLevel.blocks.length);
-                console.log('Level powerUps:', this.currentLevel.powerUps.length);
-                console.log('Player position:', this.player.x, this.player.y);
-            }
         }
     }
     
     drawPauseScreen() {
-        console.log('Drawing pause screen...');
         // Draw semi-transparent overlay
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         this.ctx.fillRect(0, 0, this.width, this.height);
@@ -442,7 +420,6 @@ class Game {
     }
     
     drawLevelComplete() {
-        console.log('Drawing level complete screen...');
         // Draw semi-transparent overlay
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         this.ctx.fillRect(0, 0, this.width, this.height);
@@ -462,14 +439,8 @@ class Game {
         this.ctx.font = '22px Arial';
         this.ctx.fillText('Click to continue to next level', this.width / 2, this.height / 2 + 120);
         
-        // Debug info about mouse state
-        console.log('Level complete screen - mouse state:', this.input.mouseDown);
-        
         // Check for click to continue - use more reliable mouse click detection
         if (this.input.isMouseDown() || this.input.isMouseClicked()) {
-            console.log('Mouse click detected on level complete screen!');
-            console.log(`Transitioning from LEVEL_COMPLETE to PLAYING state, loading level ${this.currentLevelId}`);
-            
             // Reset mouse state first to prevent multiple clicks
             this.input.reset();
             
@@ -480,7 +451,6 @@ class Game {
     }
     
     drawGameOver() {
-        console.log('Drawing game over screen...');
         // Draw semi-transparent overlay
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         this.ctx.fillRect(0, 0, this.width, this.height);
@@ -520,7 +490,6 @@ class Game {
     }
     
     drawGameComplete() {
-        console.log('Drawing game complete screen...');
         // Draw semi-transparent overlay
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         this.ctx.fillRect(0, 0, this.width, this.height);
@@ -566,55 +535,44 @@ class Game {
     }
     
     togglePause() {
-        console.log('Toggling pause...');
         if (this.state === GameState.PLAYING) {
             this.paused = !this.paused;
-            console.log('Paused state:', this.paused);
         }
     }
     
     openShop() {
-        console.log('Opening shop...');
         if (this.state === GameState.PLAYING && !this.paused) {
             this.state = GameState.SHOP;
             this.shop.open();
-            console.log('Shop opened:', this.shop);
         }
     }
     
     closeShop() {
-        console.log('Closing shop...');
         if (this.state === GameState.SHOP) {
             this.state = GameState.PLAYING;
             this.shop.close();
-            console.log('Shop closed:', this.shop);
         }
     }
     
     gameOver() {
-        console.log('Game over...');
         this.state = GameState.GAME_OVER;
     }
     
     completeLevel(nextLevelId) {
-        console.log(`Level ${this.currentLevelId} complete. Moving to level ${nextLevelId}...`);
         this.state = GameState.LEVEL_COMPLETE;
         this.currentLevelId = nextLevelId;
     }
     
     completeGame() {
-        console.log('Game complete!');
         this.state = GameState.GAME_COMPLETE;
     }
     
     resetGame() {
-        console.log('Resetting game...');
         // Reset player
         this.player = new Player({
             x: 50, 
             y: this.height / 2 - 20
         });
-        console.log('Player reset:', this.player);
         this.player.init(this.ctx);
         
         // Initialize shop system with new player
@@ -623,13 +581,11 @@ class Game {
         this.shop.showMessage = (message, duration) => {
             showMessage(this.ctx, message, duration);
         };
-        console.log('Shop system reset:', this.shop);
         
         // Reset levels
         this.levels = {};
         for (let i = 1; i <= 11; i++) {
             this.levels[i] = LevelFactory["createLevel" + i](this.width, this.height);
-            console.log(`Level ${i} reset:`, this.levels[i]);
         }
         
         // Load first level
@@ -640,6 +596,5 @@ class Game {
 
 // Start the game when the page loads
 window.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM content loaded. Starting game...');
     const game = new Game();
 });
